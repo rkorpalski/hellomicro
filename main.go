@@ -2,15 +2,25 @@ package main
 
 import (
 	"github.com/micro/go-micro"
+	"github.com/micro/go-micro/metadata"
 	"github.com/micro/go-micro/server"
 	proto "github.com/rkorpalski/hellomicro/proto"
 	"github.com/rkorpalski/hellomicro/service"
 	hystrixplugin "github.com/micro/go-plugins/wrapper/breaker/hystrix"
 	"github.com/afex/hystrix-go/hystrix"
 	"log"
+	"context"
 )
 
 var serviceName = "service-helloworld"
+
+type Sub struct{}
+
+func (s *Sub) Process(ctx context.Context, event *proto.Event) error {
+	md, _ := metadata.FromContext(ctx)
+	log.Printf("[pubsub.1] Received event %+v with metadata %+v\n", event, md)
+	return nil
+}
 
 func main() {
 
@@ -38,6 +48,8 @@ func main() {
 	)
 
 	proto.RegisterGreeterHandler(server.Server(), service.NewHelloService())
+
+	micro.RegisterSubscriber("topic.service", server.Server(), new(Sub))
 
 	server.Init()
 
